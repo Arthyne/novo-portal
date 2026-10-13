@@ -85,9 +85,12 @@ class DocumentoController extends BaseApiController
         if ($doc->arquivo_path) Storage::disk('public')->delete($doc->arquivo_path);
         if ($doc->xml_path)     Storage::disk('public')->delete($doc->xml_path);
 
+        $nPagar   = $doc->contasPagar()->delete();
+        $nReceber = $doc->contasReceber()->delete();
+
         $doc->delete();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'contas_excluidas' => $nPagar + $nReceber]);
     }
 
     // ─── Vínculos ────────────────────────────────────────────────────────────
