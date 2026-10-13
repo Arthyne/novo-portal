@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ContaReceberController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PreferenceController;
+use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\MovimentoBancarioController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -47,6 +48,14 @@ Route::delete('/movimento-bancario/{id}', [MovimentoBancarioController::class, '
 
     Route::get('/dashboard/resumo', [DashboardController::class, 'resumo']);
     Route::get('/dashboard/fluxo-caixa', [DashboardController::class, 'fluxoCaixa']);
+
+    Route::get('/documentos', [DocumentoController::class, 'index']);
+    Route::post('/documentos', [DocumentoController::class, 'store']);
+    Route::put('/documentos/{id}', [DocumentoController::class, 'update']);
+    Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy']);
+    Route::get('/documentos/{id}/vinculos', [DocumentoController::class, 'vinculos']);
+    Route::post('/documentos/{id}/vincular', [DocumentoController::class, 'vincular']);
+    Route::post('/documentos/importar-xml', [DocumentoController::class, 'importarXml']);
 });
 Route::middleware(['auth:sanctum'])->prefix('preferences')->group(function () {
     Route::get('/',                   [PreferenceController::class, 'index']);

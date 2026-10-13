@@ -9,8 +9,8 @@ class ContaReceber extends Model
     protected $table = 'new_contasreceber';
     public $timestamps = false;
     protected $fillable = [
-        'empresa', 'status', 'pessoa_id', 'valor', 'parcela', 'dt_emissao', 'dt_vencimento',
-        'dt_competencia', 'dt_pagamento', 'num_documento', 'codbarras', 'obs',
+        'empresa', 'documento_id', 'status', 'pessoa_id', 'valor', 'parcela', 'dt_emissao',
+        'dt_vencimento', 'dt_competencia', 'dt_pagamento', 'num_documento', 'codbarras', 'obs',
         'new_forma_pagamento_id', 'new_portador_id', 'new_categoria_id', 'centro_custo_id',
         'juros', 'multa', 'caixa', 'tipo_documento',
         'mes_vencimento', 'ano_vencimento', 'ano_mes_vencimento', 'mes_emissao', 'ano_emissao',
