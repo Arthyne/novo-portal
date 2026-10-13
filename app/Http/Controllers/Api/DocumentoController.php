@@ -119,7 +119,7 @@ class DocumentoController extends BaseApiController
             $conta = ContaReceber::where('empresa', $empresaId)->findOrFail($contaId);
             $conta->update(['documento_id' => $doc->id]);
         } else {
-            return response()->json(['error' => 'tipo deve ser pagar ou receber'], 422);
+            return response()->json(['message' => 'tipo deve ser pagar ou receber'], 422);
         }
 
         return response()->json(['ok' => true]);
@@ -132,7 +132,7 @@ class DocumentoController extends BaseApiController
         $empresaId = $this->empresaId($request);
 
         if (!$request->hasFile('xml')) {
-            return response()->json(['error' => 'Arquivo XML não enviado'], 422);
+            return response()->json(['message' => 'Arquivo XML não enviado'], 422);
         }
 
         $xmlFile    = $request->file('xml');
@@ -141,7 +141,7 @@ class DocumentoController extends BaseApiController
         // Parse do XML
         $dados = $this->parseNFe($xmlContent);
         if (!$dados) {
-            return response()->json(['error' => 'XML inválido ou não reconhecido como NF-e'], 422);
+            return response()->json(['message' => 'XML inválido ou não reconhecido como NF-e. Verifique se é um arquivo NF-e válido.'], 422);
         }
 
         // Salva o arquivo XML
@@ -171,57 +171,63 @@ class DocumentoController extends BaseApiController
             'arquivo_nome'   => $xmlFile->getClientOriginalName(),
         ]);
 
-        // Gera contas a pagar automaticamente
+        // Gera contas a pagar automaticamente (só se o fornecedor estiver cadastrado)
         $parcelas      = $dados['parcelas'];
         $totalParcelas = count($parcelas);
         $contasCriadas = [];
+        $aviso         = null;
 
-        if ($totalParcelas === 0) {
-            // Sem duplicatas no XML — cria 1 parcela com vencimento = emissão
-            $parcelas = [[
-                'vencimento' => $dados['dt_emissao'],
-                'valor'      => $dados['valor_total'],
-            ]];
-            $totalParcelas = 1;
-        }
+        if ($pessoaId === null) {
+            $aviso = "Documento importado sem gerar contas a pagar: emitente \"{$dados['nome_emit']}\" não está cadastrado como fornecedor. Cadastre o fornecedor e vincule manualmente.";
+        } else {
+            if ($totalParcelas === 0) {
+                // Sem duplicatas no XML — cria 1 parcela com vencimento = emissão
+                $parcelas = [[
+                    'vencimento' => $dados['dt_emissao'],
+                    'valor'      => $dados['valor_total'],
+                ]];
+                $totalParcelas = 1;
+            }
 
-        foreach ($parcelas as $i => $parcela) {
-            $numParcela = $i + 1;
-            $obs = $totalParcelas > 1
-                ? "Parcela {$numParcela} de {$totalParcelas} — NF {$dados['num_nf']}"
-                : "NF {$dados['num_nf']} — {$dados['nome_emit']}";
+            foreach ($parcelas as $i => $parcela) {
+                $numParcela = $i + 1;
+                $obs = $totalParcelas > 1
+                    ? "Parcela {$numParcela} de {$totalParcelas} — NF {$dados['num_nf']}"
+                    : "NF {$dados['num_nf']} — {$dados['nome_emit']}";
 
-            $venc = $parcela['vencimento'];
-            [$ano, $mes] = [substr($venc, 0, 4), substr($venc, 5, 2)];
+                $venc = $parcela['vencimento'];
+                [$ano, $mes] = [substr($venc, 0, 4), substr($venc, 5, 2)];
 
-            $conta = ContaPagar::create([
-                'empresa'         => $empresaId,
-                'documento_id'    => $doc->id,
-                'pessoa_id'       => $pessoaId,
-                'valor'           => $parcela['valor'],
-                'parcela'         => "{$numParcela}/{$totalParcelas}",
-                'dt_emissao'      => $dados['dt_emissao'],
-                'dt_vencimento'   => $venc,
-                'dt_competencia'  => $dados['dt_emissao'],
-                'num_documento'   => $dados['num_nf'],
-                'obs'             => $obs,
-                'status'          => 'A',
-                'tipo_documento'  => 'NF',
-                'mes_vencimento'  => (int)$mes,
-                'ano_vencimento'  => (int)$ano,
-                'ano_mes_vencimento' => (int)($ano . $mes),
-                'mes_emissao'     => (int)substr($dados['dt_emissao'], 5, 2),
-                'ano_emissao'     => (int)substr($dados['dt_emissao'], 0, 4),
-                'ano_mes_emissao' => (int)(substr($dados['dt_emissao'], 0, 4) . substr($dados['dt_emissao'], 5, 2)),
-            ]);
+                $conta = ContaPagar::create([
+                    'empresa'         => $empresaId,
+                    'documento_id'    => $doc->id,
+                    'pessoa_id'       => $pessoaId,
+                    'valor'           => $parcela['valor'],
+                    'parcela'         => "{$numParcela}/{$totalParcelas}",
+                    'dt_emissao'      => $dados['dt_emissao'],
+                    'dt_vencimento'   => $venc,
+                    'dt_competencia'  => $dados['dt_emissao'],
+                    'num_documento'   => $dados['num_nf'],
+                    'obs'             => $obs,
+                    'status'          => 'A',
+                    'tipo_documento'  => 'NF',
+                    'mes_vencimento'  => (int)$mes,
+                    'ano_vencimento'  => (int)$ano,
+                    'ano_mes_vencimento' => (int)($ano . $mes),
+                    'mes_emissao'     => (int)substr($dados['dt_emissao'], 5, 2),
+                    'ano_emissao'     => (int)substr($dados['dt_emissao'], 0, 4),
+                    'ano_mes_emissao' => (int)(substr($dados['dt_emissao'], 0, 4) . substr($dados['dt_emissao'], 5, 2)),
+                ]);
 
-            $contasCriadas[] = $conta;
+                $contasCriadas[] = $conta;
+            }
         }
 
         return response()->json([
             'documento'    => $doc->load('pessoa'),
             'contas_pagar' => $contasCriadas,
-            'parcelas'     => $totalParcelas,
+            'parcelas'     => count($contasCriadas),
+            'aviso'        => $aviso,
         ], 201);
     }
 
