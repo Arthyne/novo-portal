@@ -204,6 +204,7 @@ class DocumentoController extends BaseApiController
         $portador      = $request->input('portador');
         $categoria     = $request->input('categoria');
         $formaPagto    = $request->input('forma_pagamento');
+        $dtEmissao     = $request->input('dt_emissao')     ?: $doc->dt_emissao;
         $dtCompetencia = $request->input('dt_competencia') ?: $doc->dt_emissao;
 
         if (!$pessoaId) {
@@ -239,7 +240,7 @@ class DocumentoController extends BaseApiController
                 'portador'           => $portador,
                 'categoria'          => $categoria,
                 'forma_pagamento'    => $formaPagto,
-                'dt_emissao'         => $doc->dt_emissao,
+                'dt_emissao'         => $dtEmissao,
                 'dt_vencimento'      => $venc,
                 'dt_competencia'     => $dtComp,
                 'num_documento'      => $doc->num_documento,
@@ -249,9 +250,9 @@ class DocumentoController extends BaseApiController
                 'mes_vencimento'     => (int)$mes,
                 'ano_vencimento'     => (int)$ano,
                 'ano_mes_vencimento' => (int)($ano . $mes),
-                'mes_emissao'        => (int)substr($doc->dt_emissao, 5, 2),
-                'ano_emissao'        => (int)substr($doc->dt_emissao, 0, 4),
-                'ano_mes_emissao'    => (int)(substr($doc->dt_emissao, 0, 4) . substr($doc->dt_emissao, 5, 2)),
+                'mes_emissao'        => (int)substr($dtEmissao, 5, 2),
+                'ano_emissao'        => (int)substr($dtEmissao, 0, 4),
+                'ano_mes_emissao'    => (int)(substr($dtEmissao, 0, 4) . substr($dtEmissao, 5, 2)),
                 'mes_competencia'    => (int)$mesComp,
                 'ano_competencia'    => (int)$anoComp,
                 'ano_mes_competencia'=> (int)($anoComp . $mesComp),
