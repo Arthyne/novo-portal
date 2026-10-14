@@ -56,6 +56,7 @@ Route::delete('/movimento-bancario/{id}', [MovimentoBancarioController::class, '
     Route::get('/documentos/{id}/vinculos', [DocumentoController::class, 'vinculos']);
     Route::post('/documentos/{id}/vincular', [DocumentoController::class, 'vincular']);
     Route::post('/documentos/importar-xml', [DocumentoController::class, 'importarXml']);
+    Route::post('/documentos/{id}/confirmar-contas-pagar', [DocumentoController::class, 'confirmarContasPagar']);
 });
 Route::middleware(['auth:sanctum'])->prefix('preferences')->group(function () {
     Route::get('/',                   [PreferenceController::class, 'index']);
