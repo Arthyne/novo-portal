@@ -312,14 +312,17 @@ class DocumentoController extends BaseApiController
             }
         }
 
+        $nomeEmit = html_entity_decode((string)($emit->xNome ?? ''), ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $cnpjEmit = preg_replace('/\D/', '', (string)($emit->CNPJ ?? $emit->CPF ?? ''));
+
         return [
             'num_nf'      => (string)$ide->nNF,
             'serie'       => (string)$ide->serie,
             'chave_acesso'=> $chaveAcesso,
             'dt_emissao'  => $dtEmissao,
             'valor_total' => $tot ? (float)$tot->vNF : 0,
-            'nome_emit'   => (string)($emit->xNome ?? ''),
-            'cnpj_emit'   => (string)($emit->CNPJ ?? $emit->CPF ?? ''),
+            'nome_emit'   => $nomeEmit,
+            'cnpj_emit'   => $cnpjEmit,
             'parcelas'    => $parcelas,
         ];
     }
