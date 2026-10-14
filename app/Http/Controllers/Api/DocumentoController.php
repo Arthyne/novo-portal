@@ -187,6 +187,7 @@ class DocumentoController extends BaseApiController
             'documento'         => $doc->load('pessoa'),
             'pessoa_encontrada' => $pessoaId ? Pessoa::find($pessoaId) : null,
             'nome_emit'         => $dados['nome_emit'],
+            'cnpj_emit'         => $dados['cnpj_emit'],
             'parcelas_sugeridas'=> $parcelasSugeridas,
         ], 201);
     }
@@ -198,8 +199,12 @@ class DocumentoController extends BaseApiController
         $empresaId = $this->empresaId($request);
         $doc = Documento::where('empresa_id', $empresaId)->findOrFail($id);
 
-        $pessoaId = $request->input('pessoa_id');
-        $parcelas = $request->input('parcelas', []);
+        $pessoaId      = $request->input('pessoa_id');
+        $parcelas      = $request->input('parcelas', []);
+        $portador      = $request->input('portador');
+        $categoria     = $request->input('categoria');
+        $formaPagto    = $request->input('forma_pagamento');
+        $dtCompetencia = $request->input('dt_competencia') ?: $doc->dt_emissao;
 
         if (!$pessoaId) {
             return response()->json(['message' => 'Selecione o fornecedor antes de criar os lançamentos.'], 422);
@@ -213,12 +218,17 @@ class DocumentoController extends BaseApiController
 
         foreach ($parcelas as $i => $parcela) {
             $numParcela = $i + 1;
-            $obs = $totalParcelas > 1
-                ? "Parcela {$numParcela} de {$totalParcelas} — {$doc->tipo} {$doc->num_documento}"
-                : "{$doc->tipo} {$doc->num_documento}" . ($doc->descricao ? " — {$doc->descricao}" : '');
+            $obs = !empty($parcela['obs'])
+                ? $parcela['obs']
+                : ($totalParcelas > 1
+                    ? "Parcela {$numParcela}/{$totalParcelas} — {$doc->tipo} {$doc->num_documento}"
+                    : "{$doc->tipo} {$doc->num_documento}");
 
             $venc = $parcela['dt_vencimento'];
             [$ano, $mes] = [substr($venc, 0, 4), substr($venc, 5, 2)];
+
+            $dtComp = $dtCompetencia ?: $venc;
+            [$anoComp, $mesComp] = [substr($dtComp, 0, 4), substr($dtComp, 5, 2)];
 
             $contasCriadas[] = ContaPagar::create([
                 'empresa'            => $empresaId,
@@ -226,9 +236,12 @@ class DocumentoController extends BaseApiController
                 'pessoa_id'          => $pessoaId,
                 'valor'              => $parcela['valor'],
                 'parcela'            => "{$numParcela}/{$totalParcelas}",
+                'portador'           => $portador,
+                'categoria'          => $categoria,
+                'forma_pagamento'    => $formaPagto,
                 'dt_emissao'         => $doc->dt_emissao,
                 'dt_vencimento'      => $venc,
-                'dt_competencia'     => $doc->dt_emissao,
+                'dt_competencia'     => $dtComp,
                 'num_documento'      => $doc->num_documento,
                 'obs'                => $obs,
                 'status'             => 'A',
@@ -239,6 +252,9 @@ class DocumentoController extends BaseApiController
                 'mes_emissao'        => (int)substr($doc->dt_emissao, 5, 2),
                 'ano_emissao'        => (int)substr($doc->dt_emissao, 0, 4),
                 'ano_mes_emissao'    => (int)(substr($doc->dt_emissao, 0, 4) . substr($doc->dt_emissao, 5, 2)),
+                'mes_competencia'    => (int)$mesComp,
+                'ano_competencia'    => (int)$anoComp,
+                'ano_mes_competencia'=> (int)($anoComp . $mesComp),
             ]);
         }
 
