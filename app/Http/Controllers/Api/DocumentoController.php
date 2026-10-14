@@ -20,10 +20,11 @@ class DocumentoController extends BaseApiController
         $query = Documento::with('pessoa')
             ->where('empresa_id', $empresaId);
 
-        if ($tipo = $request->query('tipo'))     $query->where('tipo', $tipo);
-        if ($status = $request->query('status')) $query->where('status', $status);
-        if ($de  = $request->query('emissao_de'))  $query->whereDate('dt_emissao', '>=', $de);
-        if ($ate = $request->query('emissao_ate'))  $query->whereDate('dt_emissao', '<=', $ate);
+        if ($tipo     = $request->query('tipo'))     $query->where('tipo', $tipo);
+        if ($natureza = $request->query('natureza')) $query->where('natureza', $natureza);
+        if ($status   = $request->query('status'))   $query->where('status', $status);
+        if ($de  = $request->query('emissao_de'))    $query->whereDate('dt_emissao', '>=', $de);
+        if ($ate = $request->query('emissao_ate'))   $query->whereDate('dt_emissao', '<=', $ate);
 
         $docs = $query->orderByDesc('dt_emissao')->get();
 
@@ -162,6 +163,7 @@ class DocumentoController extends BaseApiController
         $doc = Documento::create([
             'empresa_id'     => $empresaId,
             'tipo'           => 'NF',
+            'natureza'       => 'E',
             'num_documento'  => $dados['num_nf'],
             'serie'          => $dados['serie'],
             'pessoa_id'      => $pessoaId,
