@@ -34,17 +34,23 @@ class CadastroController extends BaseApiController
         $model = $this->modelFor($recurso);
         $query = $model::query();
 
-        if ($busca = $request->query('busca')) {
-            $campo = match ($recurso) {
-                'portadores' => 'portador',
-                'categorias' => 'categoria',
-                'centros', 'centros-custo' => 'cc',
-                'formas', 'formas-pagamento' => 'forma_pagamento',
-                'pessoas' => 'nome',
-                default => null,
-            };
-            if ($campo) {
-                $query->where($campo, 'like', "%{$busca}%");
+        $busca = $request->query('q') ?: $request->query('busca');
+        if ($busca) {
+            if ($recurso === 'pessoas') {
+                $query->where(function ($q) use ($busca) {
+                    $q->where('nome', 'like', "%{$busca}%")
+                      ->orWhere('nome_reduz', 'like', "%{$busca}%")
+                      ->orWhere('cpf_cnpj', 'like', "%{$busca}%");
+                });
+            } else {
+                $campo = match ($recurso) {
+                    'portadores' => 'portador',
+                    'categorias' => 'categoria',
+                    'centros', 'centros-custo' => 'cc',
+                    'formas', 'formas-pagamento' => 'forma_pagamento',
+                    default => null,
+                };
+                if ($campo) $query->where($campo, 'like', "%{$busca}%");
             }
         }
 
